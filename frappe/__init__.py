@@ -2050,7 +2050,10 @@ def get_print(
 		html = get_response_content("printview")
 
 	if as_pdf:
-		return get_pdf(html, options=pdf_options, output=output)
+		if conf.digital_signature_pem_file and conf.digital_signature_key_file:
+			return get_pdf(html, options=pdf_options, output=output, pem_file=conf.digital_signature_pem_file, key_file=conf.digital_signature_key_file) if as_pdf else html
+		else:
+			return get_pdf(html, options=pdf_options, output=output)
 	else:
 		return html
 
