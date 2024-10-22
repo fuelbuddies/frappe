@@ -47,7 +47,7 @@ dependencies = [
     "openpyxl~=3.0.7",
     "passlib~=1.7.4",
     "pdfkit~=1.0.0",
-    "pyHanko[pkcs11,image-support,opentype,xmp,pdf-fields]~=0.20.1",
+    "pyHanko[pkcs11,image-support,opentype,xmp]~=0.20.1",
     "phonenumbers==8.12.40",
     "premailer~=3.8.0",
     "psutil~=5.9.1",

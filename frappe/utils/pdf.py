@@ -10,9 +10,9 @@ import pdfkit
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader, PdfWriter
 from pyhanko.sign import signers
+from pyhanko.sign.fields import SigFieldSpec
 from pyhanko.sign.general import load_cert_from_pemder, load_private_key_from_pemder
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
-from pyhanko.pdf_utils.fields import SigFieldSpec
 
 import frappe
 from frappe import _
