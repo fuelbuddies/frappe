@@ -10,7 +10,7 @@ import pdfkit
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader, PdfWriter
 from pyhanko.sign import signers
-from pyhanko.sign.fields import SigFieldSpec
+from pyhanko.sign.fields import SigFieldSpec, FieldMDPSpec, FieldMDPAction
 from pyhanko.sign.general import load_cert_from_pemder, load_private_key_from_pemder
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
 
@@ -104,13 +104,6 @@ def sign_pdf(input_pdf_io, pem_file, key_file):
     # Create an IncrementalPdfFileWriter for the input PDF
     input_pdf_io.seek(0)
     pdf_writer = IncrementalPdfFileWriter(input_pdf_io)
-
-	# Define a signature field specification with the DocMDP level
-    sig_field_spec = SigFieldSpec(sig_field_name='Signature1', box=(100, 220, 150, 260), 
-                                   docmdp_level=0)  # No changes allowed after signing
-
-    # Register the signature field in the PDF writer
-    pdf_writer.add_signature_field(sig_field_spec)
 
     # Define a signature field
     signature_meta = signers.PdfSignatureMetadata(
