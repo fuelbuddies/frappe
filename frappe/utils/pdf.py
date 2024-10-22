@@ -9,6 +9,9 @@ from distutils.version import LooseVersion
 import pdfkit
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader, PdfWriter
+from pyhanko.sign import signers
+from pyhanko.sign.general import load_cert_from_pemder, load_private_key_from_pemder
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
 
 import frappe
 from frappe import _
@@ -23,7 +26,7 @@ PDF_CONTENT_ERRORS = [
 ]
 
 
-def get_pdf(html, options=None, output: PdfWriter | None = None):
+def get_pdf(html, options=None, output: PdfWriter | None = None, pem_file=None, key_file=None):
 	html = scrub_urls(html)
 	html, options = prepare_options(html, options)
 
@@ -66,10 +69,38 @@ def get_pdf(html, options=None, output: PdfWriter | None = None):
 	if "password" in options:
 		writer.encrypt(password)
 
-	filedata = get_file_data_from_writer(writer)
+	if pem_file and key_file:
+		filedata = sign_pdf(io.BytesIO(filedata), pem_file, key_file)
+	else:
+		filedata = get_file_data_from_writer(writer)
 
 	return filedata
 
+def sign_pdf(input_pdf_io, pem_file, key_file):
+    # Load the certificate and private key
+    with open(pem_file, 'rb') as cert_file:
+        cert = load_cert_from_pemder(pem_file)
+    with open(key_file, 'rb') as k_file:
+        key = load_private_key_from_pemder(key_file, passphrase=None)
+
+    # Create a signer object
+    signer = signers.SimpleSigner(signing_cert=cert, signing_key=key, cert_registry=None)
+
+    # Create an IncrementalPdfFileWriter for the input PDF
+    input_pdf_io.seek(0)
+    pdf_writer = IncrementalPdfFileWriter(input_pdf_io)
+
+    # Define a signature field
+    signature_meta = signers.PdfSignatureMetadata(
+        field_name='Signature1', reason='Document digitally signed'
+    )
+
+    output_pdf_io = io.BytesIO()
+    # Sign the PDF
+    signers.sign_pdf(pdf_writer, signature_meta, signer, output=output_pdf_io)
+
+    # Return signed PDF as bytes
+    return output_pdf_io.getvalue()
 
 def get_file_data_from_writer(writer_obj):
 
