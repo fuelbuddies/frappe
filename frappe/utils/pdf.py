@@ -12,6 +12,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from pyhanko.sign import signers
 from pyhanko.sign.general import load_cert_from_pemder, load_private_key_from_pemder
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from pyhanko.pdf_utils.fields import SigFieldSpec
 
 import frappe
 from frappe import _
@@ -84,15 +85,36 @@ def sign_pdf(input_pdf_io, pem_file, key_file):
         key = load_private_key_from_pemder(key_file, passphrase=None)
 
     # Create a signer object
-    signer = signers.SimpleSigner(signing_cert=cert, signing_key=key, cert_registry=None)
+    ca_chain_files = ["/workspace/development/frappe-bench/certs/chain/cert1.pem","/workspace/development/frappe-bench/certs/chain/cert2.pem","/workspace/development/frappe-bench/certs/chain/cert3.pem"]
+
+	# Load CA chain if provided
+    ca_chain = []
+    if ca_chain_files:
+        try:
+            for ca_file in ca_chain_files:
+                with open(ca_file, 'rb') as chain_file:
+                    ca_chain.append(load_cert_from_pemder(ca_file))
+            if not ca_chain:
+                raise ValueError("No CA chain certificates found in the provided CA chain files")
+        except Exception as e:
+            raise ValueError(f"Error loading CA chain: {e}")
+
+    signer = signers.SimpleSigner(signing_cert=cert, signing_key=key, cert_registry=ca_chain)
 
     # Create an IncrementalPdfFileWriter for the input PDF
     input_pdf_io.seek(0)
     pdf_writer = IncrementalPdfFileWriter(input_pdf_io)
 
+	# Define a signature field specification with the DocMDP level
+    sig_field_spec = SigFieldSpec(sig_field_name='Signature1', box=(100, 220, 150, 260), 
+                                   docmdp_level=0)  # No changes allowed after signing
+
+    # Register the signature field in the PDF writer
+    pdf_writer.add_signature_field(sig_field_spec)
+
     # Define a signature field
     signature_meta = signers.PdfSignatureMetadata(
-        field_name='Signature1', reason='Document digitally signed'
+        field_name='Signature', reason='Document digitally signed'
     )
 
     output_pdf_io = io.BytesIO()
